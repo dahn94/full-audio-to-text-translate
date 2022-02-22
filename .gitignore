@@ -1,0 +1,11 @@
+# Idea Jetbrains
+.idea/
+
+# VS Code
+.vscode/
+
+# Virtual env
+venv/
+
+# Python
+__pycache__/
