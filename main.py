@@ -1,42 +1,37 @@
-import speech_recognition as sr
-from pydub import AudioSegment
-import glob, os
-# convert mp3 file to wav (se necessario)
-# sound = AudioSegment.from_mp3("transcript.mp3")
-# sound.export("transcript.wav", format="wav")
+import glob
+import os
+from funcoes import convert_audio_to_flac, remove_audios_separados, remove_audios_transcritos, split_audio_and_return_file_path, transcribe_each_audio_files_on_recognize_google, transform_to_txt_file
 
-wave_files = glob.glob('*.wav')
+split_time = 50000 # milisegundos
 
-for wave_file in wave_files:
-    print(wave_file)
+# criar pasta para audios separados (se nao existir) 
+if not os.path.exists('audios_separados'):
+    os.makedirs('audios_separados')
+
+# criar pasta para textos (se nao existir)
+if not os.path.exists('textos'):
+    os.makedirs('textos')
+
+# Finds all audio files in the audios directory
+audio_files = glob.glob('audios/*.mp3')
+audio_files.extend(glob.glob('audios/*.wav'))
+audio_files.extend(glob.glob('audios/*.m4a'))
+convert_audio_to_flac(audio_files)
+flac_files = glob.glob('audios/*.flac')
+
+for flac_file in flac_files:
+    try:
+        name_file = flac_file.split('/')[-1].split('.')[0]
+        audios_file_path_dict = split_audio_and_return_file_path(flac_file, split_time)
+        full_transcription_str = transcribe_each_audio_files_on_recognize_google(audios_file_path_dict)
+        transform_to_txt_file(full_transcription_str, name_file)
+        remove_audios_separados()
+        remove_audios_transcritos(name_file)     
+    except Exception as e:
+        print(f'Erro ao processar {flac_file}')
+        print(e)
+        with open('audios_que_nao_foram_convertidos_com_sucesso.txt', 'a') as f:
+            f.write(flac_file + '\n')
 
 
-    # Dividir o audio
-    sound = AudioSegment.from_file(wave_file)
-    audio_files = sound[::60000]
-
-    full_transcription = ""
-
-
-    # Transformar as partes do audio em txt
-    for index, audio_file in enumerate(audio_files):
-        audio_file_name = f'audios_separados/audio_file_{index + 1}'
-        audio_file.export(audio_file_name, format='wav')
-        print(f'processando {audio_file_name}')
-        r = sr.Recognizer()
-        with sr.AudioFile(audio_file_name) as source:
-            audio = r.record(source)
-            transcription = f'Transcription {index + 1}: ' + r.recognize_google(audio, language='pt-BR')
-            full_transcription = full_transcription + transcription + '\n' + '\n'
-    
-    size = len(wave_file)
-    name_file = wave_file[:size - 4]        
-    with open(f'textos/{name_file}.txt', 'w') as f:
-        f.write(full_transcription)
-    
-    # remover audios separados 
-    dir = 'audios_separados'
-    filelist = glob.glob(os.path.join(dir, "*"))
-    for f in filelist:
-        os.remove(f)
-
+        
