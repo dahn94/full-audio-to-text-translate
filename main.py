@@ -1,6 +1,6 @@
 import glob
 import os
-from funcoes import convert_audio_to_flac, remove_audios_separados, remove_audios_transcritos, split_audio_and_return_file_path, transcribe_each_audio_files_on_recognize_google, transform_to_txt_file
+from funcoes import *
 
 split_time = 50000 # milisegundos
 
